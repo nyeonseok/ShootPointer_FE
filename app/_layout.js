@@ -43,6 +43,7 @@ export default function RootLayout() {
               headerTintColor: "#fff",
             }}
           />
+          <Stack.Screen name="kakaowebview" options={{ headerShown: false }} />
         </Stack>
       )}
       <StatusBar style="auto" />
