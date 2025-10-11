@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Image, Alert } from "react-native";
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Image,
+  Alert,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Video } from "expo-av";
@@ -9,11 +17,12 @@ export default function WriteScreen() {
   const route = useRoute();
   const { posts, setPosts } = route.params;
 
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [media, setMedia] = useState(null); // 이미지/영상 URI
-  const [mediaType, setMediaType] = useState("image"); // image | video
+  const [selectedTag, setSelectedTag] = useState("TWO_POINT"); // 기본값
+  const [media, setMedia] = useState(null);
+  const [mediaType, setMediaType] = useState("image");
 
-  // 화면 진입 시 갤러리 자동 실행
   useEffect(() => {
     pickMedia();
   }, []);
@@ -38,26 +47,28 @@ export default function WriteScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!description) {
+    if (!title.trim()) {
+      Alert.alert("제목을 입력해주세요.");
+      return;
+    }
+    if (!description.trim()) {
       Alert.alert("내용을 입력해주세요.");
       return;
     }
 
     try {
-      const highlightId = "D33B27C7-DFF9-4D1a-EcFA-2A92EF25c1d7"; // 서버에서 발급받은 ID
+      const highlightId = "d90DCCAA-DdE4-40c8-CCD1-9dFf70aABd76"; // 실제 DB에 있는 값으로 변경
 
       const response = await fetch("http://tkv00.ddns.net:9000/api/post", {
-        method: "POST", // POST 방식으로 변경
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // 필요 시 Authorization 헤더 추가
-          // "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          highlightId: highlightId,
-          title: "테스트 업로드",
+          highlightId,
+          title,
           content: description,
-          hashTag: "TWO_POINT",
+          hashTag: selectedTag,
         }),
       });
 
@@ -70,17 +81,18 @@ export default function WriteScreen() {
         return;
       }
 
-      Alert.alert("업로드 완료", "서버에 성공적으로 업로드되었습니다.");
+      Alert.alert("업로드 완료", "게시물이 등록되었습니다.");
 
-      // 로컬 posts 업데이트
       const newPost = {
         id: highlightId,
         author: "익명",
+        title,
         type: mediaType === "video" ? "video" : "image",
         media: media || "https://picsum.photos/400/300",
         description,
         likes: 0,
         liked: false,
+        hashTag: selectedTag,
       };
 
       setPosts([newPost, ...posts]);
@@ -107,14 +119,47 @@ export default function WriteScreen() {
         )
       )}
 
+      {/* 제목 입력 */}
       <TextInput
-        placeholder="내용"
+        placeholder="제목을 입력하세요"
+        placeholderTextColor="#888"
+        value={title}
+        onChangeText={setTitle}
+        style={styles.titleInput}
+      />
+
+      {/* 내용 입력 */}
+      <TextInput
+        placeholder="내용을 입력하세요"
         placeholderTextColor="#888"
         value={description}
         onChangeText={setDescription}
         style={styles.input}
         multiline
       />
+
+      {/* 해시태그 선택 */}
+      <View style={styles.tagContainer}>
+        {["TWO_POINT", "THREE_POINT"].map((tag) => (
+          <TouchableOpacity
+            key={tag}
+            style={[
+              styles.tagButton,
+              selectedTag === tag && styles.tagButtonSelected,
+            ]}
+            onPress={() => setSelectedTag(tag)}
+          >
+            <Text
+              style={[
+                styles.tagText,
+                selectedTag === tag && styles.tagTextSelected,
+              ]}
+            >
+              {tag === "TWO_POINT" ? "2점 슛" : "3점 슛"}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>등록</Text>
@@ -125,13 +170,21 @@ export default function WriteScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#111" },
-  input: {
-    backgroundColor: "#111",
+  titleInput: {
+    backgroundColor: "#222",
     color: "#fff",
-    padding: 15,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 15,
+    fontSize: 16,
+  },
+  input: {
+    backgroundColor: "#222",
+    color: "#fff",
+    padding: 12,
+    borderRadius: 10,
     marginBottom: 20,
-    minHeight: 350,
+    minHeight: 180,
     textAlignVertical: "top",
   },
   preview: {
@@ -139,6 +192,29 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 10,
     marginBottom: 20,
+  },
+  tagContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  tagButton: {
+    backgroundColor: "#333",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginHorizontal: 5,
+  },
+  tagButtonSelected: {
+    backgroundColor: "#ff6a33",
+  },
+  tagText: {
+    color: "#ccc",
+    fontSize: 14,
+  },
+  tagTextSelected: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   button: {
     backgroundColor: "#ff6a33",
