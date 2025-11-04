@@ -1,109 +1,130 @@
-import React, { useState } from "react";
-import { View, Text, Button, Alert, Image, Platform } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { View, Text, ActivityIndicator, TouchableOpacity, Alert, StyleSheet } from "react-native";
 
-const FrontendUpload = ({ jerseyNumber, frontImage }) => {
-  const [videoFile, setVideoFile] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState(null);
+export default function FrontendUpload({ jerseyNumber, frontImage }) {
+  const [uploading, setUploading] = useState(true);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [highlightReady, setHighlightReady] = useState(false);
+  const [highlightUrl, setHighlightUrl] = useState(null);
 
-  // 실제 JWT 토큰과 멤버 ID 값으로 바꾸세요
-  const JWT_TOKEN = "Bearer YOUR_JWT_TOKEN_HERE";
-  const MEMBER_ID = "123";
-
-  const pickVideo = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert("권한 필요", "갤러리 접근 권한이 필요합니다.");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsEditing: false,
-      quality: 1,
-    });
-
-    if (!result.canceled) setVideoFile(result.assets[0]);
-  };
-
-  const handleUpload = async () => {
-  if (!videoFile) return Alert.alert("오류", "영상을 선택해주세요.");
-
-  setIsUploading(true);
-  setUploadResult(null);
-
-  try {
-    const formData = new FormData();
-
-    if (Platform.OS === "web") {
-      // 웹에서는 fetch로 blob 만들기
-      const response = await fetch(videoFile.uri);
-      const blob = await response.blob();
-      formData.append("video", blob, "video.mp4");
-    } else {
-      // 모바일에서는 그대로 uri 사용
-      formData.append("video", {
-        uri: videoFile.uri,
-        name: "video.mp4",
-        type: "video/mp4",
-      });
-    }
-
-    // 등번호와 촬영 사진도 같이
-    formData.append("jerseyNumber", jerseyNumber);
-    if (frontImage) {
-      formData.append("frontImage", {
+  // 1️⃣ 업로드 요청 (촬영된 이미지 + 등번호)
+  const uploadImage = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("jerseyNumber", jerseyNumber);
+      formData.append("file", {
         uri: frontImage,
-        name: "photo.jpg",
+        name: "backshot.jpg",
         type: "image/jpeg",
       });
+
+      const res = await fetch("https://your-server.com/api/upload", {
+        method: "POST",
+        body: formData,
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (!res.ok) throw new Error("업로드 실패");
+      console.log("✅ 이미지 업로드 성공");
+    } catch (err) {
+      console.error("❌ 업로드 실패:", err);
+      Alert.alert("업로드 실패", "이미지 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setUploading(false);
     }
+  };
 
-    const res = await axios.post(
-      "http://your-server-address/upload",
-      formData,
-      {
-        headers: {
-          Authorization: JWT_TOKEN,
-          "X-Member-Id": MEMBER_ID,
-          "Content-Type": "multipart/form-data",
-        },
+  // 2️⃣ WebSocket 연결 (하이라이트 생성 완료 감지)
+  useEffect(() => {
+    const ws = new WebSocket("wss://your-server.com/highlight");
+
+    ws.onopen = () => {
+      console.log("✅ WebSocket 연결됨");
+      setWsConnected(true);
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("📩 WebSocket 수신:", data);
+
+      // 서버에서 “하이라이트 생성 완료” PUB → SUB 후 클라이언트로 전달됨
+      if (data.type === "highlight_done") {
+        setHighlightReady(true);
+        setHighlightUrl(data.url); // 서버가 URL 전달 시
+        Alert.alert("🎬 하이라이트 영상 생성 완료!", "영상이 준비되었습니다.");
       }
-    );
+    };
 
-    setUploadResult("✅ 업로드 성공: " + JSON.stringify(res.data));
-  } catch (error) {
-    console.error("❌ 오류:", error);
-    Alert.alert("업로드 실패", error?.message || "오류 발생");
-  } finally {
-    setIsUploading(false);
-  }
-};
+    ws.onerror = (err) => console.error("⚠️ WebSocket 오류:", err);
+    ws.onclose = () => console.log("🔌 WebSocket 연결 종료");
 
+    return () => ws.close();
+  }, []);
+
+  useEffect(() => {
+    uploadImage();
+  }, []);
+
+  // 3️⃣ 하이라이트 영상 선택 요청
+  const handleSelectHighlight = async () => {
+    try {
+      const res = await fetch("https://your-server.com/api/selectHighlight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jerseyNumber }),
+      });
+
+      if (!res.ok) throw new Error("영상 선택 실패");
+      Alert.alert("✅ 선택 완료", "하이라이트 영상이 선택되었습니다.");
+    } catch (err) {
+      console.error(err);
+      Alert.alert("❌ 실패", "하이라이트 선택 중 오류 발생");
+    }
+  };
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 18, marginBottom: 10 }}>등번호: {jerseyNumber}</Text>
-      {frontImage && <Image source={{ uri: frontImage }} style={{ width: 330, height: 500, marginBottom: 10 }} />}
-      
-      <Button title="🎥 영상 선택" onPress={pickVideo} />
-      <View style={{ height: 10 }} />
-      <Button
-        title={isUploading ? "업로드 중..." : "업로드"}
-        onPress={handleUpload}
-        disabled={isUploading}
-      />
-
-      {uploadResult && (
-        <View style={{ marginTop: 20 }}>
-          <Text>서버 응답:</Text>
-          <Text>{uploadResult}</Text>
-        </View>
+    <View style={styles.container}>
+      {uploading ? (
+        <>
+          <ActivityIndicator size="large" color="#ff6a33" />
+          <Text style={styles.text}>하이라이트 영상 생성 중...</Text>
+        </>
+      ) : highlightReady ? (
+        <>
+          <Text style={styles.successText}>🎥 하이라이트 영상 생성 완료!</Text>
+          {highlightUrl && (
+            <TouchableOpacity onPress={() => Alert.alert("영상 URL", highlightUrl)}>
+              <Text style={styles.linkText}>영상 보러가기</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.selectButton} onPress={handleSelectHighlight}>
+            <Text style={styles.selectText}>이 영상 선택하기</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <Text style={styles.text}>
+            {wsConnected
+              ? "⏳ 하이라이트 생성 대기 중..."
+              : "WebSocket 연결 중..."}
+          </Text>
+        </>
       )}
     </View>
   );
-};
+}
 
-export default FrontendUpload;
+const styles = StyleSheet.create({
+  container: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20 },
+  text: { color: "white", marginTop: 15, fontSize: 16 },
+  successText: { color: "#ff6a33", fontSize: 20, fontWeight: "bold", marginBottom: 10 },
+  linkText: { color: "#33aaff", marginTop: 8 },
+  selectButton: {
+    marginTop: 20,
+    backgroundColor: "#ff6a33",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  selectText: { color: "white", fontSize: 16 },
+});

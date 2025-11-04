@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import api from "./api/api";
 import { useLocalSearchParams } from "expo-router";
@@ -44,10 +45,7 @@ export default function CommentScreen() {
     setLoading(true);
     try {
       const res = await api.get(`/api/comment/${postId}`);
-      console.log("📥 댓글 조회 data:", res.data);
-
       if (res.data.success) {
-        // 서버 데이터가 배열이면 그대로 세팅
         setComments(res.data.data || []);
       } else {
         setComments([]);
@@ -75,8 +73,6 @@ export default function CommentScreen() {
         content: newComment.trim(),
       });
 
-      console.log("✍️ 댓글 작성 응답:", res.data);
-
       if (res.data.success) {
         setNewComment("");
         fetchComments();
@@ -101,8 +97,6 @@ export default function CommentScreen() {
         onPress: async () => {
           try {
             const res = await api.delete(`/api/comment/${commentId}`);
-            console.log("🗑 댓글 삭제 응답:", res.data);
-
             if (res.data.success) {
               setComments((prev) =>
                 prev.filter((c) => String(c.commentId) !== commentId)
@@ -135,16 +129,17 @@ export default function CommentScreen() {
           renderItem={renderItem}
           keyExtractor={(item) => String(item.commentId)}
           contentContainerStyle={{ paddingVertical: 10 }}
-          initialNumToRender={10} // 초기 렌더링 아이템 수
-          maxToRenderPerBatch={10} // 한 번에 렌더링할 아이템 수
-          windowSize={5} // 화면에 렌더링할 영역
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
         />
       )}
 
+      {/* 댓글 입력창 */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="댓글을 입력하세요..."
+          placeholder="하이라이트에 대한 댓글을 작성해 주세요!"
           placeholderTextColor="#888"
           value={newComment}
           onChangeText={setNewComment}
@@ -154,7 +149,10 @@ export default function CommentScreen() {
           onPress={handleAddComment}
           disabled={sending}
         >
-          <Text style={styles.sendText}>등록</Text>
+          <Image
+            source={require("../assets/images/Up_circle.png")}
+            style={styles.sendIcon}
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -179,12 +177,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#222",
-    borderRadius: 10,
-    paddingHorizontal: 10,
+    borderRadius: 25, // 둥글게
+    paddingHorizontal: 15,
     paddingVertical: 8,
     marginBottom: 10,
   },
-  input: { flex: 1, color: "#fff", paddingRight: 10 },
-  sendButton: { backgroundColor: "#ff6a33", padding: 8, borderRadius: 6 },
-  sendText: { color: "#fff", fontWeight: "bold" },
+  input: {
+    flex: 1,
+    color: "#fff",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 25,
+  },
+  sendButton: {
+    backgroundColor: "transparent", // 버튼 투명
+    padding: 8,
+    marginLeft: 8,
+  },
+  sendIcon: {
+    width: 24,
+    height: 24,
+    tintColor: "#ff6a33", // 아이콘 주황색
+  },
 });

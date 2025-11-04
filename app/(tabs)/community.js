@@ -34,6 +34,9 @@ export default function CommunityScreen() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
 
+  // 정렬 상태
+  const [sortType, setSortType] = useState("latest"); // latest / popular
+
   // -------------------------
   // 게시물 불러오기
   const fetchPosts = async (loadMore = false) => {
@@ -45,7 +48,7 @@ export default function CommunityScreen() {
         params: {
           postId: loadMore ? lastPostId : null,
           size: 10,
-          type: "latest",
+          type: sortType, // 최신순 / 인기순 반영
         },
       });
 
@@ -77,8 +80,11 @@ export default function CommunityScreen() {
   };
 
   useEffect(() => {
-    fetchPosts();
-  }, []);
+  setLastPostId(null);
+  setHasMore(true);
+  fetchPosts(false);
+}, [sortType]);
+
 
   const handleLoadMore = () => fetchPosts(true);
 
@@ -274,43 +280,75 @@ export default function CommunityScreen() {
   // -------------------------
   return (
     <View style={styles.container}>
-      {!searchVisible && (
-        <TouchableOpacity
-          style={styles.searchButton}
-          onPress={() => setSearchVisible(true)}
-        >
-          <Image
-            source={require("../../assets/images/Search.png")}
-            style={{ width: 24, height: 24, tintColor: "#fff" }}
-          />
-        </TouchableOpacity>
-      )}
-
-      {searchVisible && (
-        <View style={styles.searchContainer}>
+      {/* 검색 및 정렬 영역 */}
+      <View style={styles.topBar}>
+        {!searchVisible && (
           <TouchableOpacity
-            onPress={() => {
-              setSearchVisible(false);
-              setSearchText("");
-              setSearchResults([]);
-              setSuggestions([]);
-            }}
-            style={styles.backButton}
+            style={styles.searchButton}
+            onPress={() => setSearchVisible(true)}
           >
-            <Text style={{ color: "#fff", fontSize: 18 }}>←</Text>
+            <Image
+              source={require("../../assets/images/Search.png")}
+              style={{ width: 24, height: 24, tintColor: "#fff" }}
+            />
           </TouchableOpacity>
+        )}
 
-          <TextInput
-            style={styles.searchInput}
-            placeholder="검색어를 입력하세요"
-            placeholderTextColor="#888"
-            value={searchText}
-            onChangeText={handleSearchChange}
-            onSubmitEditing={() => handleSearchSubmit(searchText)}
-          />
-        </View>
-      )}
+        {searchVisible && (
+          <View style={styles.searchContainer}>
+            <TouchableOpacity
+              onPress={() => {
+                setSearchVisible(false);
+                setSearchText("");
+                setSearchResults([]);
+                setSuggestions([]);
+              }}
+              style={styles.backButton}
+            >
+              <Text style={{ color: "#fff", fontSize: 18 }}>←</Text>
+            </TouchableOpacity>
 
+            <TextInput
+              style={styles.searchInput}
+              placeholder="검색어를 입력하세요"
+              placeholderTextColor="#888"
+              value={searchText}
+              onChangeText={handleSearchChange}
+              onSubmitEditing={() => handleSearchSubmit(searchText)}
+            />
+          </View>
+        )}
+
+        {/* 최신순 / 인기순 버튼 */}
+        {!searchVisible && (
+          <View style={styles.sortContainer}>
+<TouchableOpacity
+  style={[styles.sortButton, sortType === "latest" && styles.sortButtonActive]}
+  onPress={() => {
+    setSortType("latest");
+    setLastPostId(null);
+    setHasMore(true);
+  }}
+>
+  <Text style={styles.sortText}>최신순</Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+  style={[styles.sortButton, sortType === "popular" && styles.sortButtonActive]}
+  onPress={() => {
+    setSortType("popular");
+    setLastPostId(null);
+    setHasMore(true);
+  }}
+>
+  <Text style={styles.sortText}>인기순</Text>
+</TouchableOpacity>
+
+          </View>
+        )}
+      </View>
+
+      {/* 검색 제안 */}
       {searchVisible && suggestions.length > 0 && (
         <View style={styles.suggestionBox}>
           {suggestions.map((s, idx) => (
@@ -321,12 +359,14 @@ export default function CommunityScreen() {
         </View>
       )}
 
+      {/* 게시물 없을 때 안내 */}
       {posts.length === 0 && !loadingMore && !searchVisible && (
         <Text style={{ color: "#fff", textAlign: "center", marginTop: 50 }}>
           게시물이 없습니다.
         </Text>
       )}
 
+      {/* 게시물 리스트 */}
       <FlatList
         data={searchVisible ? searchResults : posts}
         renderItem={renderItem}
@@ -344,6 +384,7 @@ export default function CommunityScreen() {
         }
       />
 
+      {/* 글쓰기 FAB */}
       {!searchVisible && (
         <TouchableOpacity
           style={styles.fab}
@@ -358,7 +399,7 @@ export default function CommunityScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#111", padding: 15 },
-  post: { padding: 15, marginTop: 20, backgroundColor: "#000", borderRadius: 12 },
+  post: { padding: 15, backgroundColor: "#000", borderRadius: 12, marginTop: 20 },
   title: { fontWeight: "bold", color: "#fff", fontSize: 16, marginBottom: 5 },
   author: { fontWeight: "bold", color: "#fff", marginBottom: 5 },
   media: { width: "100%", height: 200, borderRadius: 10, marginBottom: 10 },
@@ -387,8 +428,14 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   fabText: { fontSize: 28, color: "#fff", fontWeight: "bold" },
-  searchButton: { position: "absolute", top: 20, right: 40, zIndex: 20, padding: 5 },
-  searchContainer: { flexDirection: "row", alignItems: "center", marginTop: 50 },
+  searchButton: { padding: 5 },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 50,
+  },
+  searchContainer: { flexDirection: "row", alignItems: "center", flex: 1 },
   backButton: { paddingHorizontal: 10 },
   searchInput: {
     flex: 1,
@@ -410,4 +457,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: "#444",
   },
+  sortContainer: { flexDirection: "row", marginLeft: 10 },
+  sortButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "#333",
+  },
+  sortButtonActive: {
+    backgroundColor: "#ff6a33",
+  },
+  sortText: { color: "#fff", fontWeight: "bold" },
 });
