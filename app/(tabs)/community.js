@@ -19,6 +19,7 @@ import { useRouter } from "expo-router";
 
 export default function CommunityScreen() {
   const navigation = useNavigation();
+  const router = useRouter();
 
   // 게시물 상태
   const [posts, setPosts] = useState([]);
@@ -32,10 +33,9 @@ export default function CommunityScreen() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
-const router = useRouter();
 
   // -------------------------
-// 게시물 불러오기
+  // 게시물 불러오기
   const fetchPosts = async (loadMore = false) => {
     if (loadingMore || (!hasMore && loadMore)) return;
     setLoadingMore(true);
@@ -56,7 +56,7 @@ const router = useRouter();
           description: post.content,
           likes: post.likeCnt,
           title: post.title,
-          type: "image",
+          type: post.highlightUrl?.endsWith(".mp4") ? "video" : "image",
           media: post.highlightUrl,
           likedByMe: false,
           bookmarked: false,
@@ -164,7 +164,7 @@ const router = useRouter();
             description: post.content,
             likes: post.likeCnt,
             title: post.title,
-            type: "image",
+            type: post.highlightUrl?.endsWith(".mp4") ? "video" : "image",
             media: post.highlightUrl,
             likedByMe: false,
             bookmarked: false,
@@ -183,85 +183,92 @@ const router = useRouter();
   // -------------------------
   // 게시물 렌더링
   const renderItem = ({ item }) => (
-    <View style={styles.post}>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.author}>{item.author}</Text>
+    <TouchableOpacity
+      onPress={() =>
+        router.push({
+          pathname: "/PostDetailScreen",
+          params: { postId: String(item.postId) },
+        })
+      }
+    >
+      <View style={styles.post}>
+        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.author}>{item.author}</Text>
 
-      {item.type === "image" ? (
-        <Image source={{ uri: item.media }} style={styles.media} />
-      ) : (
-        <Video
-          source={{ uri: item.media }}
-          style={styles.media}
-          useNativeControls
-          resizeMode="cover"
-          isLooping
-        />
-      )}
+        {item.type === "image" ? (
+          <Image source={{ uri: item.media }} style={styles.media} />
+        ) : (
+          <Video
+            source={{ uri: item.media }}
+            style={styles.media}
+            useNativeControls
+            resizeMode="cover"
+            isLooping
+          />
+        )}
 
-      <Text style={styles.description}>{item.description}</Text>
-      {item.hashTag ? <Text style={styles.hashtag}>{item.hashTag}</Text> : null}
+        <Text style={styles.description}>{item.description}</Text>
+        {item.hashTag ? <Text style={styles.hashtag}>{item.hashTag}</Text> : null}
 
-      <View style={styles.bottomActions}>
-        <View style={styles.leftActions}>
+        <View style={styles.bottomActions}>
+          <View style={styles.leftActions}>
+            <TouchableOpacity
+              onPress={() => toggleLike(item.postId, item.likedByMe)}
+              style={styles.iconButton}
+            >
+              <Image
+                source={
+                  item.likedByMe
+                    ? require("../../assets/images/Filledheart.png")
+                    : require("../../assets/images/Heart.png")
+                }
+                style={styles.icon}
+              />
+              <Text style={styles.likeCount}>{item.likes}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() =>
+                router.push({
+                  pathname: "/CommentScreen",
+                  params: { postId: String(item.postId) },
+                })
+              }
+            >
+              <Image
+                source={require("../../assets/images/Comment.png")}
+                style={styles.icon}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => Alert.alert("공유", "이 게시물의 링크를 복사했습니다!")}
+            >
+              <Image
+                source={require("../../assets/images/Send.png")}
+                style={styles.icon}
+              />
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity
-            onPress={() => toggleLike(item.postId, item.likedByMe)}
+            onPress={() => toggleBookmark(item.postId)}
             style={styles.iconButton}
           >
             <Image
               source={
-                item.likedByMe
-                  ? require("../../assets/images/Filledheart.png")
-                  : require("../../assets/images/Heart.png")
+                item.bookmarked
+                  ? require("../../assets/images/Filledbookmark.png")
+                  : require("../../assets/images/Bookmark.png")
               }
-              style={styles.icon}
-            />
-            <Text style={styles.likeCount}>{item.likes}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-  style={styles.iconButton}
-  onPress={() => {
-    console.log("Navigate params:", { postId: item.postId });
-    router.push({
-      pathname: "/CommentScreen",
-      params: { postId: String(item.postId) }, // 문자열로 전달
-    });
-  }}
->
-  <Image
-    source={require("../../assets/images/Comment.png")}
-    style={styles.icon}
-  />
-</TouchableOpacity>
-
-
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => Alert.alert("공유", "이 게시물의 링크를 복사했습니다!")}
-          >
-            <Image
-              source={require("../../assets/images/Send.png")}
               style={styles.icon}
             />
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          onPress={() => toggleBookmark(item.postId)}
-          style={styles.iconButton}
-        >
-          <Image
-            source={
-              item.bookmarked
-                ? require("../../assets/images/Filledbookmark.png")
-                : require("../../assets/images/Bookmark.png")
-            }
-            style={styles.icon}
-          />
-        </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   // -------------------------

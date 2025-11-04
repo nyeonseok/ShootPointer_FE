@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { useRouter } from "expo-router";
 
 // 더미 유저 데이터
 const dummyUser = {
   id: 1,
-  name: '홍길동',
-  email: 'test@example.com',
-  nickname: '슛포인터',
-  profileImage: 'https://picsum.photos/200',
+  name: "홍길동",
+  email: "test@example.com",
+  nickname: "슛포인터",
+  profileImage: "https://picsum.photos/200",
 };
 
 export default function MyPageScreen() {
@@ -22,7 +22,7 @@ export default function MyPageScreen() {
   if (!user) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={{ color: '#fff' }}>로딩 중...</Text>
+        <Text style={{ color: "#fff" }}>로딩 중...</Text>
       </View>
     );
   }
@@ -32,9 +32,9 @@ export default function MyPageScreen() {
       {/* 상단 타이틀 + 설정 버튼 */}
       <View style={styles.header}>
         <Text style={styles.title}>마이페이지</Text>
-        <TouchableOpacity 
-          style={styles.settingsButton} 
-          onPress={() => router.push('/settings')}
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => router.push("/settings")}
         >
           <Text style={styles.settingsText}>설정</Text>
         </TouchableOpacity>
@@ -42,7 +42,10 @@ export default function MyPageScreen() {
 
       {/* 프로필 섹션 */}
       <View style={styles.section}>
-        <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
+        <Image
+          source={{ uri: user.profileImage }}
+          style={styles.profileImage}
+        />
         <Text style={styles.infoText}>이름: {user.name}</Text>
         <Text style={styles.infoText}>닉네임: {user.nickname}</Text>
         <Text style={styles.infoText}>이메일: {user.email}</Text>
@@ -50,24 +53,37 @@ export default function MyPageScreen() {
 
       {/* 활동 버튼 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>내 활동</Text>
         <View style={styles.buttonRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={() => router.push("/mypage/liked")}
           >
+            <Image
+              source={require("../../assets/images/mpHeart.png")}
+              style={styles.icon}
+            />
             <Text style={styles.actionText}>좋아요한 글</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={() => router.push("/mypage/saved")}
           >
+            <Image
+              source={require("../../assets/images/mpBookmark.png")}
+              style={styles.icon}
+            />
             <Text style={styles.actionText}>저장한 글</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={() => router.push("/mypage/myposts")}
           >
+            <Image
+              source={require("../../assets/images/mpDocument.png")}
+              style={styles.icon}
+            />
             <Text style={styles.actionText}>게시한 글</Text>
           </TouchableOpacity>
         </View>
@@ -76,24 +92,60 @@ export default function MyPageScreen() {
       {/* 히스토리 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>히스토리</Text>
-        <Text style={styles.infoText}>최근 활동 기록 (예: 3시간 전 업로드)</Text>
+        <Text style={styles.infoText}>
+          최근 활동 기록 (예: 3시간 전 업로드)
+        </Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#111111' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#111' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#ccc' },
+  container: { flex: 1, padding: 20, backgroundColor: "#111111" },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#111",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  title: { fontSize: 24, fontWeight: "bold", color: "#ccc" },
   settingsButton: { paddingHorizontal: 10, paddingVertical: 5 },
-  settingsText: { color: '#6C63FF', fontWeight: 'bold', fontSize: 16 },
-  section: { backgroundColor: '#1A1A1A', borderRadius: 12, padding: 15, marginBottom: 20, alignItems: 'center' },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#fff' },
-  infoText: { fontSize: 16, marginBottom: 5, color: '#fff' },
+  settingsText: { color: "#6C63FF", fontWeight: "bold", fontSize: 16 },
+  section: {
+    backgroundColor: "#1A1A1A",
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#fff",
+  },
+  infoText: { fontSize: 16, marginBottom: 5, color: "#fff" },
   profileImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 15 },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
-  actionButton: { flex: 1, marginHorizontal: 5, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, backgroundColor: '#333' },
-  actionText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    height:80
+  },
+  actionButton: {
+    flex: 1,
+    marginHorizontal: 5,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    backgroundColor: "#333",
+  },
+  actionText: { color: "#fff", fontWeight: "bold", fontSize: 14 },
 });

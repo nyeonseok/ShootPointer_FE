@@ -104,3 +104,21 @@ export const updateComment = async (commentId, content) => {
   const res = await api.patch(`/api/comment/${commentId}`, { content });
   return res.data;
 };
+
+// ✅ 단건 조회 API 추가
+export const getPostById = async (postId) => {
+  try {
+  const response = await api.get("/api/post");
+  console.log("📥 게시물 응답:", response.data);
+
+  if (response.data.success) {
+    setPosts(response.data.data);
+  } else {
+    Alert.alert("게시물을 불러오지 못하였습니다.");
+  }
+} catch (error) {
+  console.log("❌ 게시물 불러오기 에러:", error);
+  Alert.alert("게시물을 불러오지 못하였습니다.");
+}
+
+};

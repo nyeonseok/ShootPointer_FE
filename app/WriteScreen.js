@@ -1,91 +1,130 @@
-import React, { useState } from "react";
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
-import api from "./api/api";
+import React, { useEffect, useState } from "react";
+import { View, Text, ActivityIndicator, TouchableOpacity, Alert, StyleSheet } from "react-native";
 
-export default function WriteScreen({ route, navigation }) {
-const { posts = [], setPosts = () => {} } = route?.params || {};
+export default function FrontendUpload({ jerseyNumber, frontImage }) {
+  const [uploading, setUploading] = useState(true);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [highlightReady, setHighlightReady] = useState(false);
+  const [highlightUrl, setHighlightUrl] = useState(null);
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedTag, setSelectedTag] = useState("TWO_POINT");
-
-  // 더미 하이라이트 ID
-  const dummyHighlight = { id: "8fa1a1E4-8f33-f725-f7dE-Acd95A5bFbba" };
-
-  const handleSubmit = async () => {
-    console.log("▶ handleSubmit 호출");
-    console.log("제목:", title);
-    console.log("내용:", description);
-    console.log("선택 하이라이트:", dummyHighlight.id);
-
-    if (!title.trim() || !description.trim()) {
-      Alert.alert("제목과 내용을 모두 입력해주세요.");
-      return;
-    }
-
+  // 1️⃣ 업로드 요청 (촬영된 이미지 + 등번호)
+  const uploadImage = async () => {
     try {
-      console.log("▶ POST 요청 보내는 중...");
-      const response = await api.post("/api/post", {
-        highlightId: dummyHighlight.id,
-        title,
-        content: description,
-        hashTag: selectedTag,
+      const formData = new FormData();
+      formData.append("jerseyNumber", jerseyNumber);
+      formData.append("file", {
+        uri: frontImage,
+        name: "backshot.jpg",
+        type: "image/jpeg",
       });
-      console.log("▶ 서버 응답:", response.data);
 
-      if (response.data.success) {
-        Alert.alert("업로드 완료", "게시물이 등록되었습니다.");
+      const res = await fetch("https://your-server.com/api/upload", {
+        method: "POST",
+        body: formData,
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-        const newPost = {
-          postId: dummyHighlight.id,
-          author: "익명",
-          title,
-          description,
-          type: "image",
-          media: "https://picsum.photos/400/300", // 임시 이미지
-          likes: 0,
-          likedByMe: false,
-          hashTag: selectedTag,
-        };
-
-        setPosts([newPost, ...posts]);
-        navigation.goBack();
-      } else {
-        Alert.alert("업로드 실패", response.data?.error?.message || "서버 오류");
-      }
+      if (!res.ok) throw new Error("업로드 실패");
+      console.log("✅ 이미지 업로드 성공");
     } catch (err) {
-      console.error("▶ POST 요청 실패:", err);
-      Alert.alert("오류", "서버와 연결할 수 없습니다.");
+      console.error("❌ 업로드 실패:", err);
+      Alert.alert("업로드 실패", "이미지 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // 2️⃣ WebSocket 연결 (하이라이트 생성 완료 감지)
+  useEffect(() => {
+    const ws = new WebSocket("wss://your-server.com/highlight");
+
+    ws.onopen = () => {
+      console.log("✅ WebSocket 연결됨");
+      setWsConnected(true);
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("📩 WebSocket 수신:", data);
+
+      // 서버에서 “하이라이트 생성 완료” PUB → SUB 후 클라이언트로 전달됨
+      if (data.type === "highlight_done") {
+        setHighlightReady(true);
+        setHighlightUrl(data.url); // 서버가 URL 전달 시
+        Alert.alert("🎬 하이라이트 영상 생성 완료!", "영상이 준비되었습니다.");
+      }
+    };
+
+    ws.onerror = (err) => console.error("⚠️ WebSocket 오류:", err);
+    ws.onclose = () => console.log("🔌 WebSocket 연결 종료");
+
+    return () => ws.close();
+  }, []);
+
+  useEffect(() => {
+    uploadImage();
+  }, []);
+
+  // 3️⃣ 하이라이트 영상 선택 요청
+  const handleSelectHighlight = async () => {
+    try {
+      const res = await fetch("https://your-server.com/api/selectHighlight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jerseyNumber }),
+      });
+
+      if (!res.ok) throw new Error("영상 선택 실패");
+      Alert.alert("✅ 선택 완료", "하이라이트 영상이 선택되었습니다.");
+    } catch (err) {
+      console.error(err);
+      Alert.alert("❌ 실패", "하이라이트 선택 중 오류 발생");
     }
   };
 
   return (
     <View style={styles.container}>
-      <TextInput
-        placeholder="제목"
-        placeholderTextColor="#888"
-        value={title}
-        onChangeText={setTitle}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="내용"
-        placeholderTextColor="#888"
-        value={description}
-        onChangeText={setDescription}
-        style={[styles.input, { height: 150, textAlignVertical: "top" }]}
-        multiline
-      />
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>등록</Text>
-      </TouchableOpacity>
+      {uploading ? (
+        <>
+          <ActivityIndicator size="large" color="#ff6a33" />
+          <Text style={styles.text}>하이라이트 영상 생성 중...</Text>
+        </>
+      ) : highlightReady ? (
+        <>
+          <Text style={styles.successText}>🎥 하이라이트 영상 생성 완료!</Text>
+          {highlightUrl && (
+            <TouchableOpacity onPress={() => Alert.alert("영상 URL", highlightUrl)}>
+              <Text style={styles.linkText}>영상 보러가기</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.selectButton} onPress={handleSelectHighlight}>
+            <Text style={styles.selectText}>이 영상 선택하기</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <Text style={styles.text}>
+            {wsConnected
+              ? "⏳ 하이라이트 생성 대기 중..."
+              : "WebSocket 연결 중..."}
+          </Text>
+        </>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#111" },
-  input: { backgroundColor: "#222", color: "#fff", padding: 12, borderRadius: 10, marginBottom: 15 },
-  button: { backgroundColor: "#ff6a33", padding: 15, borderRadius: 12, alignItems: "center" },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  container: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20 },
+  text: { color: "white", marginTop: 15, fontSize: 16 },
+  successText: { color: "#ff6a33", fontSize: 20, fontWeight: "bold", marginBottom: 10 },
+  linkText: { color: "#33aaff", marginTop: 8 },
+  selectButton: {
+    marginTop: 20,
+    backgroundColor: "#ff6a33",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  selectText: { color: "white", fontSize: 16 },
 });

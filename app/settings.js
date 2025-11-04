@@ -1,32 +1,67 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Switch, Image, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import ConfirmModal from './ConfirmModal'; // 모달 import
+import ConfirmModal from './ConfirmModal';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [modalAction, setModalAction] = useState(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true); // 알림 토글 상태
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [toastVisible, setToastVisible] = useState(false);
+  const fadeAnim = useState(new Animated.Value(0))[0];
 
-  const toggleSwitch = () => setNotificationsEnabled(previousState => !previousState);
+  const showToast = () => {
+    setToastVisible(true);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }).start(() => setToastVisible(false));
+      }, 1500);
+    });
+  };
 
   const showModal = (action) => {
-    setModalAction(action);
-    setModalVisible(true);
+    if (action === 'notification') {
+      if (notificationsEnabled) {
+        // 🔕 알림 끄기일 때만 확인 모달 띄움
+        setModalAction('notification');
+        setModalVisible(true);
+      } else {
+        // 🔔 알림 켜기일 때는 바로 토글 + 이미지 표시
+        setNotificationsEnabled(true);
+        showToast();
+      }
+    } else {
+      setModalAction(action);
+      setModalVisible(true);
+    }
   };
 
   const handleConfirm = async () => {
     setModalVisible(false);
+
     if (modalAction === 'logout') {
       await AsyncStorage.removeItem('accessToken');
       await AsyncStorage.removeItem('refreshToken');
       router.replace('/login');
-    } else if (modalAction === 'delete') {
+    } 
+    else if (modalAction === 'delete') {
       await AsyncStorage.clear();
       router.replace('/login');
-      // TODO: 서버 회원탈퇴 API 호출
+    } 
+    else if (modalAction === 'notification') {
+      // 알림 끄기 확정 시
+      setNotificationsEnabled(false);
+      showToast();
     }
   };
 
@@ -38,12 +73,11 @@ export default function SettingsScreen() {
         <View style={styles.row}>
           <Text style={styles.label}>알림 받기</Text>
           <Switch
-  value={notificationsEnabled}
-  onValueChange={toggleSwitch}
-  trackColor={{ false: '#ccc', true: '#FF7F50' }}
-  thumbColor={notificationsEnabled ? '#fff' : '#fff'} // 켜도 끄도 흰색
-/>
-
+            value={notificationsEnabled}
+            onValueChange={() => showModal('notification')}
+            trackColor={{ false: '#ccc', true: '#FF7F50' }}
+            thumbColor="#fff"
+          />
         </View>
       </View>
 
@@ -59,24 +93,46 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 커스텀 모달 */}
+      {/* ConfirmModal */}
       <ConfirmModal
-        title={modalAction === 'logout' ? '로그아웃' : '회원탈퇴'}
+        title={
+          modalAction === 'logout'
+            ? '로그아웃'
+            : modalAction === 'delete'
+            ? '회원탈퇴'
+            : '알림 끄기'
+        }
         visible={modalVisible}
         onConfirm={handleConfirm}
         onCancel={() => setModalVisible(false)}
         message={
           modalAction === 'logout'
             ? '정말 로그아웃 하시겠습니까?'
-            : '회원님의 하이라이트를 더는 볼 수 없다니 너무 아쉬워요...'
+            : modalAction === 'delete'
+            ? '회원님의 하이라이트를 더는 볼 수 없다니 너무 아쉬워요...'
+            : '다양한 소식과 각종 정보를 받지 못할 수 있어요'
         }
       />
+
+      {/* ✅ 메시지 이미지 토스트 */}
+      {toastVisible && (
+        <Animated.View style={[styles.toastContainer, { opacity: fadeAnim }]}>
+          <Image
+            source={
+              notificationsEnabled
+                ? require('../assets/images/bell_on.png')   // 알림 켜짐 이미지
+                : require('../assets/images/bell_off.png')  // 알림 꺼짐 이미지
+            }
+            style={styles.toastImage}
+            resizeMode="contain"
+          />
+        </Animated.View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  
   container: {
     flex: 1,
     backgroundColor: '#111111',
@@ -89,7 +145,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#FFFFFF'
+    color: '#FFFFFF',
   },
   row: {
     flexDirection: 'row',
@@ -103,17 +159,26 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '500',
-    color:'#FFFFFF'
+    color: '#FFFFFF',
   },
- button: {
-  borderRadius: 8,
-  marginBottom: 15,
-  alignItems: 'flex-start', // 왼쪽 정렬
-},
-buttonText: {
-  color: '#FF5A5F', // 글자 색 강조
-  fontWeight: 'bold',
-  fontSize: 16,
-},
-
+  button: {
+    borderRadius: 8,
+    marginBottom: 15,
+    alignItems: 'flex-start',
+  },
+  buttonText: {
+    color: '#FF5A5F',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  toastContainer: {
+    position: 'absolute',
+    bottom: 60,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  toastImage: {
+    width: 350,   // 이미지 크기 조정
+  },
 });

@@ -1,5 +1,5 @@
 // app/CommentScreen.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,47 +10,64 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import api from "./api/api"; // 경로: app 폴더에서 ../api/api 로 수정
-
-// expo-router 훅으로 params 읽기
+import api from "./api/api";
 import { useLocalSearchParams } from "expo-router";
+
+// 댓글 아이템 컴포넌트 최적화
+const CommentItem = React.memo(({ item, onDelete }) => (
+  <View style={styles.commentItem}>
+    <View style={{ flex: 1 }}>
+      <Text style={styles.commentAuthor}>{item.memberName}</Text>
+      <Text style={styles.commentContent}>{item.content}</Text>
+      <Text style={styles.commentDate}>
+        {new Date(item.createdAt).toLocaleString()}
+      </Text>
+    </View>
+    <TouchableOpacity onPress={() => onDelete(String(item.commentId))}>
+      <Text style={styles.deleteText}>삭제</Text>
+    </TouchableOpacity>
+  </View>
+));
 
 export default function CommentScreen() {
   const params = useLocalSearchParams();
-  // expo-router로 들어오는 params는 문자열일 수 있으니 필요하면 변환
-  const postId = params?.postId ? Number(params.postId) : null;
+  const postId = params?.postId ? String(params.postId) : null;
 
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [editingText, setEditingText] = useState("");
 
-  const fetchComments = async () => {
+  // 댓글 조회
+  const fetchComments = useCallback(async () => {
     if (!postId) return;
     setLoading(true);
     try {
       const res = await api.get(`/api/comment/${postId}`);
       console.log("📥 댓글 조회 data:", res.data);
+
       if (res.data.success) {
-        setComments(res.data.data.commentList || []);
+        // 서버 데이터가 배열이면 그대로 세팅
+        setComments(res.data.data || []);
       } else {
-        Alert.alert("댓글 조회 실패", res.data.msg || "알 수 없는 오류");
+        setComments([]);
+        Alert.alert("댓글 조회 실패", res.data.msg || "댓글을 불러오지 못했습니다.");
       }
     } catch (err) {
       console.error("댓글 조회 오류:", err);
+      Alert.alert("오류", "댓글 조회 중 문제가 발생했습니다.");
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    if (postId) fetchComments();
   }, [postId]);
 
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  // 댓글 작성
   const handleAddComment = async () => {
-    if (newComment.trim() === "" || !postId) return;
+    if (!newComment.trim() || !postId) return;
     setSending(true);
     try {
       const res = await api.post(`/api/comment`, {
@@ -74,34 +91,8 @@ export default function CommentScreen() {
     }
   };
 
-  const handleEditComment = async (commentId) => {
-    if (editingText.trim() === "") return;
-
-    try {
-      const res = await api.patch(`/api/comment/${commentId}`, {
-        content: editingText.trim(),
-      });
-
-      console.log("✏️ 댓글 수정 응답:", res.data);
-
-      if (res.data.success) {
-        setComments((prev) =>
-          prev.map((c) =>
-            c.commentId === commentId ? { ...c, content: editingText } : c
-          )
-        );
-        setEditingId(null);
-        setEditingText("");
-      } else {
-        Alert.alert("댓글 수정 실패", res.data.msg || "다시 시도해주세요");
-      }
-    } catch (err) {
-      console.error("댓글 수정 오류:", err);
-      Alert.alert("오류", "댓글 수정 중 문제가 발생했습니다.");
-    }
-  };
-
-  const handleDeleteComment = async (commentId) => {
+  // 댓글 삭제
+  const handleDeleteComment = useCallback((commentId) => {
     Alert.alert("삭제", "댓글을 삭제하시겠습니까?", [
       { text: "취소", style: "cancel" },
       {
@@ -114,7 +105,7 @@ export default function CommentScreen() {
 
             if (res.data.success) {
               setComments((prev) =>
-                prev.filter((c) => c.commentId !== commentId)
+                prev.filter((c) => String(c.commentId) !== commentId)
               );
             } else {
               Alert.alert("댓글 삭제 실패", res.data.msg || "다시 시도해주세요");
@@ -126,61 +117,13 @@ export default function CommentScreen() {
         },
       },
     ]);
-  };
+  }, []);
 
-  const renderItem = ({ item }) => {
-    const isEditing = editingId === item.commentId;
-    return (
-      <View style={styles.commentItem}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.commentAuthor}>{item.memberName}</Text>
-
-          {isEditing ? (
-            <TextInput
-              style={[styles.commentContent, styles.editInput]}
-              value={editingText}
-              onChangeText={setEditingText}
-              autoFocus
-              placeholder="수정할 내용을 입력하세요"
-              placeholderTextColor="#aaa"
-            />
-          ) : (
-            <Text style={styles.commentContent}>{item.content}</Text>
-          )}
-        </View>
-
-        {isEditing ? (
-          <>
-            <TouchableOpacity onPress={() => handleEditComment(item.commentId)}>
-              <Text style={styles.editSave}>저장</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setEditingId(null);
-                setEditingText("");
-              }}
-            >
-              <Text style={styles.cancelEdit}>취소</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <TouchableOpacity
-              onPress={() => {
-                setEditingId(item.commentId);
-                setEditingText(item.content);
-              }}
-            >
-              <Text style={styles.editText}>수정</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleDeleteComment(item.commentId)}>
-              <Text style={styles.deleteText}>삭제</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    );
-  };
+  // 렌더링
+  const renderItem = useCallback(
+    ({ item }) => <CommentItem item={item} onDelete={handleDeleteComment} />,
+    [handleDeleteComment]
+  );
 
   return (
     <View style={styles.container}>
@@ -190,8 +133,11 @@ export default function CommentScreen() {
         <FlatList
           data={comments}
           renderItem={renderItem}
-          keyExtractor={(item) => item.commentId.toString()}
+          keyExtractor={(item) => String(item.commentId)}
           contentContainerStyle={{ paddingVertical: 10 }}
+          initialNumToRender={10} // 초기 렌더링 아이템 수
+          maxToRenderPerBatch={10} // 한 번에 렌더링할 아이템 수
+          windowSize={5} // 화면에 렌더링할 영역
         />
       )}
 
@@ -227,16 +173,7 @@ const styles = StyleSheet.create({
   },
   commentAuthor: { color: "#ffb400", fontWeight: "bold", marginBottom: 3 },
   commentContent: { color: "#fff" },
-  editInput: {
-    backgroundColor: "#333",
-    padding: 5,
-    borderRadius: 5,
-    color: "#fff",
-    marginTop: 5,
-  },
-  editText: { color: "#55aaff", fontSize: 12, marginLeft: 10 },
-  editSave: { color: "#4caf50", fontSize: 12, marginLeft: 10 },
-  cancelEdit: { color: "#ff9800", fontSize: 12, marginLeft: 5 },
+  commentDate: { color: "#aaa", fontSize: 10, marginTop: 3 },
   deleteText: { color: "#ff5555", fontSize: 12, marginLeft: 10 },
   inputContainer: {
     flexDirection: "row",

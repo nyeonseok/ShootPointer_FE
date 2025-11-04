@@ -1,17 +1,19 @@
-// app/index.js
+// app/(tabs)/index.js
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, Image, Dimensions, TouchableOpacity } from "react-native";
 import { Video } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import api from "../api/api";
 
 export default function HomeScreen() {
   const [highlights, setHighlights] = useState([]);
+  const router = useRouter();
 
   useEffect(() => {
     const init = async () => {
       try {
-        // 1️⃣ 임시 토큰 발급
         const res = await api.get("/api/test-member");
         const token = res.data?.data?.accessToken ?? res.data?.accessToken ?? res.data;
         if (token) {
@@ -20,7 +22,6 @@ export default function HomeScreen() {
           console.log("[API] 임시 AccessToken 세팅 완료");
         }
 
-        // 2️⃣ 임시 하이라이트 더미
         setHighlights([
           {
             id: "1",
@@ -37,11 +38,6 @@ export default function HomeScreen() {
             type: "video",
           },
         ]);
-
-        // 3️⃣ 실제 API 호출 예시 (post 조회)
-        // const postRes = await api.get("/api/post", { params: { size: 10 } });
-        // console.log("게시물 조회:", postRes.data);
-
       } catch (err) {
         console.error("초기화 실패:", err);
       }
@@ -73,11 +69,15 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* 상단 로고 + 랭킹 버튼 */}
       <View style={styles.header}>
         <Image
           source={require("../../assets/images/logo2.png")}
           style={styles.logo}
         />
+        <TouchableOpacity onPress={() => router.push("/RankingScreen")}>
+          <Ionicons name="flame-outline" size={26} color="#ff6a33" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.bottomArea}>
@@ -108,6 +108,7 @@ const styles = {
   container: { flex: 1, backgroundColor: "#111111" },
   header: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 15,
     paddingTop: 40,

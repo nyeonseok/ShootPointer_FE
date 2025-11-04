@@ -10,15 +10,10 @@ import { WebView } from "react-native-webview";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { 
-  EXPO_PUBLIC_KAKAO_REST_API_KEY, 
-  EXPO_PUBLIC_REDIRECT_URI, 
-  EXPO_PUBLIC_API_URL 
-} from "@env";
 
-const REST_API_KEY = EXPO_PUBLIC_KAKAO_REST_API_KEY;
-const REDIRECT_URI = EXPO_PUBLIC_REDIRECT_URI;
-const API_URL = EXPO_PUBLIC_API_URL;
+const REST_API_KEY = "2d02b80c257c10b0bcd5f762ba607f0d";
+const REDIRECT_URI = "https://tkv00.ddns.net"; // 필요시 실제 도메인으로 교체
+const API_URL = "http://tkv00.ddns.net/kakao/callback";
 
 export default function KakaoWebViewLogin() {
   const [loading, setLoading] = useState(false);
