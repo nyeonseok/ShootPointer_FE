@@ -1,10 +1,10 @@
 // app/(tabs)/index.js
-import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, Image, Dimensions, TouchableOpacity } from "react-native";
-import { Video } from "expo-av";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Video } from "expo-av";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { Dimensions, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import api from "../api/api";
 
 export default function HomeScreen() {
@@ -18,7 +18,7 @@ export default function HomeScreen() {
         const token = res.data?.data?.accessToken ?? res.data?.accessToken ?? res.data;
         if (token) {
           await AsyncStorage.setItem("accessToken", token);
-          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+          // api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
           console.log("[API] 임시 AccessToken 세팅 완료");
         }
 
