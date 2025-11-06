@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useRef } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
-  View,
-  StyleSheet,
-  Alert,
   ActivityIndicator,
+  Alert,
   Platform,
+  StyleSheet,
+  View,
 } from "react-native";
 import { WebView } from "react-native-webview";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 
 const REST_API_KEY = "2d02b80c257c10b0bcd5f762ba607f0d";
 const REDIRECT_URI = "https://tkv00.ddns.net"; // 필요시 실제 도메인으로 교체
-const API_URL = "http://tkv00.ddns.net/kakao/callback";
+const API_URL = "https://tkv00.ddns.net/kakao/callback";
 
 export default function KakaoWebViewLogin() {
   const [loading, setLoading] = useState(false);
@@ -40,18 +40,22 @@ export default function KakaoWebViewLogin() {
         }
       }
 
-      const { accessToken, refreshToken } = parsed.result || {};
+      const result = parsed?.result || parsed;
+      const accessToken = result?.accessToken ?? null;
+      const refreshToken = result?.refreshToken ?? null;
+
       console.log("🟢 Access Token:", accessToken);
       console.log("🟢 Refresh Token:", refreshToken);
 
       if (!accessToken) {
-        
         Alert.alert("로그인 실패", "토큰 발급에 실패했습니다.");
         return;
       }
 
-      await AsyncStorage.setItem("accessToken", accessToken);
-      await AsyncStorage.setItem("refreshToken", refreshToken);
+      await Promise.all([
+        AsyncStorage.setItem("accessToken", String(accessToken)),
+        AsyncStorage.setItem("refreshToken", String(refreshToken)),
+      ]);
 
       setLoginFinished(true); // WebView 언마운트
       router.replace('/'); // 홈 화면으로 이동
