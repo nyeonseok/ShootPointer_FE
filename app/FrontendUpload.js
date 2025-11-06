@@ -2,11 +2,17 @@ import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import { Alert, Button, Image, Text, View } from "react-native";
 
+
+
 const FrontendUpload = ({ jerseyNumber, frontImage }) => {
   const [videoFile, setVideoFile] = useState(null);
+  const [videoName, setVideoName] = useState<String>("");
+  const [videoSize, setVideoSize] = useState<Number>(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const [videoOk, setVideoOk] = useState<Boolean>(false);
+  const [videoUpload, setVideoUpload] = useState<Boolean>(false);
+  // const [presignedURL, setPresignedURL] = useState<String>("");
 
   // 실제 JWT 토큰과 멤버 ID 값으로 바꾸세요
   const JWT_TOKEN = "Bearer YOUR_JWT_TOKEN_HERE";
@@ -20,13 +26,43 @@ const FrontendUpload = ({ jerseyNumber, frontImage }) => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      mediaTypes: "Videos",
       allowsEditing: false,
       quality: 1,
     });
 
-    if (!result.canceled) setVideoFile(result.assets[0]);
+    if (!result.canceled) { // 로그 찍으면서 값이 들어가는지 확인 필요
+      const videoAsset = result.assets[0];
+      setVideoName(videoAsset.fileName || videoAsset.uri.split("/").pop());
+      setVideoSize(videoAsset.fileSize ?? (await FileSystem.getInfoAsync(videoAsset.uri)).size);
+      setVideoFile(videoAsset);
+    }
   };
+
+  //pre-signed 발급 함수
+  const getPresignedUrlFromServer =async()=>{
+    try{
+      const response = await api.post("https://tkv00.ddns.net/api/pre-signed",{
+        fileName:"",
+        fileSize:123
+      })
+      if (response.status === 200){
+         return response.data.presignedUrl 
+      }
+
+    } catch(error){
+      console.error("Presigned URL 요청 실패:", error);
+      throw error; 
+    }
+  }
+
+  //비디오 업로드 함수
+  const handleVideoUpload = async()=>{
+    setVideoUpload(true)
+  }
+
+
+
 
   const handleUpload = async () => {
     setIsUploading(true);
@@ -98,6 +134,10 @@ const FrontendUpload = ({ jerseyNumber, frontImage }) => {
       {videoOk && ( 
         <View style={{ marginTop: 20 }}>
           <Button title="🎥 영상 선택" onPress={pickVideo} />
+          <View style={{height:10}}/>
+          <Button title={videoUpload ? "업로드 중..." : "업로드"}
+          onPress={handleVideoUpload}
+          disabled={videoUpload}/>
         </View>
       )}
 
