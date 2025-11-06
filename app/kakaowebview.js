@@ -21,6 +21,7 @@ export default function KakaoWebViewLogin() {
   const [loginFinished, setLoginFinished] = useState(false); // ✅ WebView 언마운트용
   const iframeRef = useRef(null);
   const router = useRouter();
+  const isHandledRef = useRef(false);
 
   const handleKakaoCode = async (code) => {
     setLoading(true);
@@ -121,12 +122,14 @@ export default function KakaoWebViewLogin() {
         source={{ uri: kakaoAuthUrl }}
         onNavigationStateChange={(navState) => {
           const { url } = navState;
-          if (!isHandled && url.startsWith(REDIRECT_URI)) {
+          if (!isHandledRef.current && url.startsWith(REDIRECT_URI)) {
             const match = url.match(/[?&]code=([^&]+)/);
             if (match) {
               const code = match[1];
               console.log("✅ 네이티브에서 받은 인가 코드:", code);
-              setIsHandled(true);
+
+              isHandledRef.current = true; // ✅ 즉시 true로 막음
+              setIsHandled(true); // 상태도 갱신 (UI용)
               handleKakaoCode(code);
             }
           }
