@@ -14,15 +14,11 @@ const FrontendUpload = ({ jerseyNumber, frontImage }) => {
   const [videoUpload, setVideoUpload] = useState<Boolean>(false);
   // const [presignedURL, setPresignedURL] = useState<String>("");
 
-  // 실제 JWT 토큰과 멤버 ID 값으로 바꾸세요
-  const JWT_TOKEN = "Bearer YOUR_JWT_TOKEN_HERE";
-  const MEMBER_ID = "123";
-
   const pickVideo = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
       Alert.alert("권한 필요", "갤러리 접근 권한이 필요합니다.");
-      return;
+      return; 
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -43,23 +39,46 @@ const FrontendUpload = ({ jerseyNumber, frontImage }) => {
   const getPresignedUrlFromServer =async()=>{
     try{
       const response = await api.post("https://tkv00.ddns.net/api/pre-signed",{
-        fileName:"",
-        fileSize:123
+        fileName:videoName,
+        fileSize:videoSize
       })
       if (response.status === 200){
          return response.data.presignedUrl 
       }
-
     } catch(error){
       console.error("Presigned URL 요청 실패:", error);
       throw error; 
     }
   }
 
-  //비디오 업로드 함수
-  const handleVideoUpload = async()=>{
-    setVideoUpload(true)
+  const uploadVideoToPython = async(url, video)=>{
+
   }
+
+  //비디오 업로드 함수
+  const handleVideoUpload = async () => {
+    setVideoUpload(true);
+
+    try {
+      // pre-signed URL 발급
+      const presignedUrl = await getPresignedUrlFromServer();
+
+      if (!presignedUrl) {
+        Alert.alert("업로드 실패","Pre-signed URL 못받음ㅜ");
+        setVideoUpload(false);
+        return;
+      }
+
+      // 파이썬 서버로 업로드, 전송 데이터는 얘기 맞춰봐야할듯 
+      await uploadVideoToPython(presignedUrl, videoData);  
+    } catch (error) {
+      console.error("비디오 업로드 실패:", error);
+      Alert.alert("업로드 실패", "비디오 업로드 중 오류발생ㅜ");
+    } finally {
+      setVideoUpload(false);
+    }
+  };
+
 
 
 
@@ -136,8 +155,8 @@ const FrontendUpload = ({ jerseyNumber, frontImage }) => {
           <Button title="🎥 영상 선택" onPress={pickVideo} />
           <View style={{height:10}}/>
           <Button title={videoUpload ? "업로드 중..." : "업로드"}
-          onPress={handleVideoUpload}
-          disabled={videoUpload}/>
+            onPress={handleVideoUpload}
+            disabled={videoUpload}/>
         </View>
       )}
 
