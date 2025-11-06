@@ -38,18 +38,22 @@ export default function KakaoWebViewLogin() {
         }
       }
 
-      const accessToken = parsed.result?.accessToken;
-      const refreshToken = parsed.result?.refreshToken;
+      const result = parsed?.result || parsed;
+      const accessToken = result?.accessToken ?? null;
+      const refreshToken = result?.refreshToken ?? null;
+
       console.log("🟢 Access Token:", accessToken);
       console.log("🟢 Refresh Token:", refreshToken);
 
-      // if (!accessToken) {
-      //   Alert.alert("로그인 실패", "토큰 발급에 실패했습니다.");
-      //   return;
-      // }
+      if (!accessToken) {
+        Alert.alert("로그인 실패", "토큰 발급에 실패했습니다.");
+        return;
+      }
 
-      await AsyncStorage.setItem("accessToken", accessToken);
-      await AsyncStorage.setItem("refreshToken", refreshToken);
+      await Promise.all([
+        AsyncStorage.setItem("accessToken", String(accessToken)),
+        AsyncStorage.setItem("refreshToken", String(refreshToken)),
+      ]);
 
       setLoginFinished(true); // WebView 언마운트
       router.replace("/"); // 홈 화면으로 이동
