@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { Stack } from "expo-router";
 import {
-  ThemeProvider,
   DarkTheme,
   DefaultTheme,
+  ThemeProvider,
 } from "@react-navigation/native";
-import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React, { useEffect, useState } from "react";
 import { useColorScheme } from "../hooks/use-color-scheme";
 
 export default function RootLayout() {
@@ -25,7 +25,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       {ready && (
-        <Stack>
+        <Stack initialRouteName="login">
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="WriteScreen"
