@@ -1,51 +1,49 @@
 // app/(tabs)/index.js
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Video } from "expo-av";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
-import api from "../api/api";
 
 export default function HomeScreen() {
   const [highlights, setHighlights] = useState([]);
   const router = useRouter();
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const res = await api.get("/api/test-member");
-        const token =
-          res.data?.data?.accessToken ?? res.data?.accessToken ?? res.data;
-        if (token) {
-          await AsyncStorage.setItem("accessToken", token);
-          // api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-          console.log("[API] 임시 AccessToken 세팅 완료");
-        }
+  // useEffect(() => {
+  //   const init = async () => {
+  //     try {
+  //       const res = await api.get("/api/test-member");
+  //       const token =
+  //         res.data?.data?.accessToken ?? res.data?.accessToken ?? res.data;
+  //       if (token) {
+  //         await AsyncStorage.setItem("accessToken", token);
+  //         // api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  //         console.log("[API] 임시 AccessToken 세팅 완료");
+  //       }
 
-        setHighlights([
-          {
-            id: "1",
-            title: "이번 주 최고의 플레이!",
-            description: "홍길동 선수의 3점 슛 🎯",
-            media: "https://picsum.photos/400/300",
-            type: "image",
-          },
-          {
-            id: "2",
-            title: "하이라이트 영상",
-            description: "김철수 선수의 멋진 덩크!",
-            media: "https://www.w3schools.com/html/mov_bbb.mp4",
-            type: "video",
-          },
-        ]);
-      } catch (err) {
-        console.error("초기화 실패:", err);
-      }
-    };
+  //       setHighlights([
+  //         {
+  //           id: "1",
+  //           title: "이번 주 최고의 플레이!",
+  //           description: "홍길동 선수의 3점 슛 🎯",
+  //           media: "https://picsum.photos/400/300",
+  //           type: "image",
+  //         },
+  //         {
+  //           id: "2",
+  //           title: "하이라이트 영상",
+  //           description: "김철수 선수의 멋진 덩크!",
+  //           media: "https://www.w3schools.com/html/mov_bbb.mp4",
+  //           type: "video",
+  //         },
+  //       ]);
+  //     } catch (err) {
+  //       console.error("초기화 실패:", err);
+  //     }
+  //   };
 
-    init();
-  }, []);
+  //   init();
+  // }, []);
 
   const renderHighlight = ({ item }) => (
     <View style={styles.card}>
