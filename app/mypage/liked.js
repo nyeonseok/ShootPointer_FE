@@ -1,7 +1,7 @@
-// app/(tabs)/mypage/liked.js
 import React, { useState } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from "react-native";
 import { Video } from "expo-av";
+import { Stack, useRouter } from "expo-router";
 
 const dummyLikedPosts = [
   {
@@ -26,6 +26,7 @@ const dummyLikedPosts = [
 
 export default function LikedScreen() {
   const [posts, setPosts] = useState(dummyLikedPosts);
+  const router = useRouter();
 
   const toggleLike = (id) => {
     setPosts((prev) =>
@@ -55,18 +56,55 @@ export default function LikedScreen() {
   );
 
   return (
+  <>
+    <Stack.Screen options={{ headerShown: false }} />
+
+    <View style={styles.header}>
+      <TouchableOpacity onPress={() => router.back()}>
+        <Image
+          source={require("../../assets/images/back.png")}
+          style={styles.backIcon}
+        />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle}>좋아요한 게시물</Text>
+      <View style={{ width: 28 }} /> 
+    </View>
+
     <View style={styles.container}>
       <FlatList data={posts} renderItem={renderItem} keyExtractor={(item) => item.id} />
     </View>
-  );
+  </>
+);
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#111", padding: 15 },
-  post: { padding: 15, marginBottom: 20, backgroundColor: "#000", borderRadius: 12 },
+  post: { padding: 15, marginBottom: 20, backgroundColor: "#000", borderRadius: 12,},
   author: { fontWeight: "bold", color: "#fff", marginBottom: 10 },
   media: { width: "100%", height: 200, borderRadius: 10, marginBottom: 10 },
   description: { color: "#ddd", marginBottom: 10 },
   actions: { flexDirection: "row" },
   like: { fontSize: 14, marginRight: 15 },
+  backButton: { position: "absolute", top: 40, left: 20, zIndex: 10 },
+  backIcon: { width: 28, height: 28, tintColor: "#fff" },
+  header: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingHorizontal: 20,
+  paddingTop: 55,
+  paddingBottom: 15,
+  backgroundColor: "#111111",
+},
+headerTitle: {
+  color: "#fff",
+  fontSize: 18,
+  fontWeight: "bold",
+},
+backIcon: {
+  width: 28,
+  height: 28,
+  tintColor: "#fff",
+},
+
 });

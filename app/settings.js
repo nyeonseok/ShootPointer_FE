@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Switch, Image, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import ConfirmModal from './ConfirmModal';
 
 export default function SettingsScreen() {
@@ -32,11 +32,9 @@ export default function SettingsScreen() {
   const showModal = (action) => {
     if (action === 'notification') {
       if (notificationsEnabled) {
-        // 🔕 알림 끄기일 때만 확인 모달 띄움
         setModalAction('notification');
         setModalVisible(true);
       } else {
-        // 🔔 알림 켜기일 때는 바로 토글 + 이미지 표시
         setNotificationsEnabled(true);
         showToast();
       }
@@ -53,82 +51,91 @@ export default function SettingsScreen() {
       await AsyncStorage.removeItem('accessToken');
       await AsyncStorage.removeItem('refreshToken');
       router.replace('/login');
-    } 
-    else if (modalAction === 'delete') {
+    } else if (modalAction === 'delete') {
       await AsyncStorage.clear();
       router.replace('/login');
-    } 
-    else if (modalAction === 'notification') {
-      // 알림 끄기 확정 시
+    } else if (modalAction === 'notification') {
       setNotificationsEnabled(false);
       showToast();
     }
   };
 
   return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+
     <View style={styles.container}>
-      {/* 알림 섹션 */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>알림</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>알림 받기</Text>
-          <Switch
-            value={notificationsEnabled}
-            onValueChange={() => showModal('notification')}
-            trackColor={{ false: '#ccc', true: '#FF7F50' }}
-            thumbColor="#fff"
-          />
+      {/* ✅ 상단 헤더 */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Image source={require("../assets/images/back.png")} style={styles.backIcon} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>설정</Text>
+        <View style={{ width: 28 }} />
+      </View>
+        {/* 알림 섹션 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>알림</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>알림 받기</Text>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={() => showModal('notification')}
+              trackColor={{ false: '#ccc', true: '#FF7F50' }}
+              thumbColor="#fff"
+            />
+          </View>
         </View>
+
+        {/* 기타 섹션 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>기타</Text>
+          <TouchableOpacity style={styles.button} onPress={() => showModal('logout')}>
+            <Text style={styles.buttonText}>로그아웃</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.button} onPress={() => showModal('delete')}>
+            <Text style={styles.buttonText}>회원 탈퇴</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ConfirmModal */}
+        <ConfirmModal
+          title={
+            modalAction === 'logout'
+              ? '로그아웃'
+              : modalAction === 'delete'
+              ? '회원탈퇴'
+              : '알림 끄기'
+          }
+          visible={modalVisible}
+          onConfirm={handleConfirm}
+          onCancel={() => setModalVisible(false)}
+          message={
+            modalAction === 'logout'
+              ? '정말 로그아웃 하시겠습니까?'
+              : modalAction === 'delete'
+              ? '회원님의 하이라이트를 더는 볼 수 없다니 너무 아쉬워요...'
+              : '다양한 소식과 각종 정보를 받지 못할 수 있어요'
+          }
+        />
+
+        {/* ✅ 메시지 이미지 토스트 */}
+        {toastVisible && (
+          <Animated.View style={[styles.toastContainer, { opacity: fadeAnim }]}>
+            <Image
+              source={
+                notificationsEnabled
+                  ? require('../assets/images/bell_on.png')
+                  : require('../assets/images/bell_off.png')
+              }
+              style={styles.toastImage}
+              resizeMode="contain"
+            />
+          </Animated.View>
+        )}
       </View>
-
-      {/* 기타 섹션 */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>기타</Text>
-        <TouchableOpacity style={styles.button} onPress={() => showModal('logout')}>
-          <Text style={styles.buttonText}>로그아웃</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button} onPress={() => showModal('delete')}>
-          <Text style={styles.buttonText}>회원 탈퇴</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ConfirmModal */}
-      <ConfirmModal
-        title={
-          modalAction === 'logout'
-            ? '로그아웃'
-            : modalAction === 'delete'
-            ? '회원탈퇴'
-            : '알림 끄기'
-        }
-        visible={modalVisible}
-        onConfirm={handleConfirm}
-        onCancel={() => setModalVisible(false)}
-        message={
-          modalAction === 'logout'
-            ? '정말 로그아웃 하시겠습니까?'
-            : modalAction === 'delete'
-            ? '회원님의 하이라이트를 더는 볼 수 없다니 너무 아쉬워요...'
-            : '다양한 소식과 각종 정보를 받지 못할 수 있어요'
-        }
-      />
-
-      {/* ✅ 메시지 이미지 토스트 */}
-      {toastVisible && (
-        <Animated.View style={[styles.toastContainer, { opacity: fadeAnim }]}>
-          <Image
-            source={
-              notificationsEnabled
-                ? require('../assets/images/bell_on.png')   // 알림 켜짐 이미지
-                : require('../assets/images/bell_off.png')  // 알림 꺼짐 이미지
-            }
-            style={styles.toastImage}
-            resizeMode="contain"
-          />
-        </Animated.View>
-      )}
-    </View>
+    </>
   );
 }
 
@@ -136,7 +143,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111111',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 25,
+    marginTop: 40,
+  },
+  backIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#fff',
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
   section: {
     marginBottom: 40,
@@ -179,6 +204,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toastImage: {
-    width: 350,   // 이미지 크기 조정
+    width: 350,
   },
 });

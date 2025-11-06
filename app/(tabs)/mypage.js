@@ -70,16 +70,6 @@ export default function MyPointerScreen() {
           <Text style={styles.actionText}>좋아요한 글</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push("/mypage/saved")}
-        >
-          <Image
-            source={require("../../assets/images/mpBookmark.png")}
-            style={styles.icon}
-          />
-          <Text style={styles.actionText}>저장한 글</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.actionButton}

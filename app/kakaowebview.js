@@ -13,7 +13,7 @@ import { useRouter } from "expo-router";
 
 const REST_API_KEY = "2d02b80c257c10b0bcd5f762ba607f0d";
 const REDIRECT_URI = "https://tkv00.ddns.net"; // 필요시 실제 도메인으로 교체
-const API_URL = "http://tkv00.ddns.net/kakao/callback";
+const API_URL = "https://tkv00.ddns.net/kakao/callback";
 
 export default function KakaoWebViewLogin() {
   const [loading, setLoading] = useState(false);

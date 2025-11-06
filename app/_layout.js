@@ -48,6 +48,7 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen name="kakaowebview" options={{ headerShown: false }} />
+          
           <Stack.Screen
             name="CommentScreen"
             options={{
@@ -57,6 +58,7 @@ export default function RootLayout() {
               headerTintColor: "#fff",
             }}
           />
+
         </Stack>
       )}
       <StatusBar style="auto" />

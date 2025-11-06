@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import axios from "axios";
+import api from "./api/api"; 
 
 const RankingScreen = () => {
   const [rankData, setRankData] = useState([]);
@@ -20,25 +20,19 @@ const RankingScreen = () => {
     fetchRanking(selectedTab);
   }, [selectedTab]);
 
-  // ✅ 랭킹 데이터 가져오기 (GET 요청)
+  // ✅ 랭킹 데이터 가져오기 (공통 api 훅 사용)
   const fetchRanking = async (type) => {
     setLoading(true);
     try {
-      const url =
-        type === "weekly"
-          ? "https://tkv00.ddns.net/api/rank/last-week"
-          : "https://tkv00.ddns.net/api/rank/last-month";
-
-      // 오늘 날짜 (예: "2025-11-04")
       const today = new Date().toISOString().split("T")[0];
       console.log("📅 요청 날짜:", today);
 
-      // ✅ GET 요청 시 date를 쿼리 파라미터로 전달
-      const response = await axios.get(url, {
-        params: { date: today },
-        timeout: 20000,
-      });
+      const url =
+        type === "weekly"
+          ? "/api/rank/this-week"
+          : "/api/rank/this-month";
 
+      const response = await api.get(url);
       console.log("📥 서버 응답:", response.data);
 
       if (response.data.success && response.data.data?.rankingList) {
@@ -147,6 +141,8 @@ const RankingScreen = () => {
 };
 
 export default RankingScreen;
+
+// ⚙ 스타일 생략 (기존 코드 유지)
 
 const styles = StyleSheet.create({
   container: {

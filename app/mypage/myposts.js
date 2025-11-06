@@ -1,4 +1,3 @@
-// app/mypage/myposts.js
 import React, { useState } from "react";
 import {
   View,
@@ -12,12 +11,14 @@ import {
 import { Video } from "expo-av";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { likePost, unlikePost, deletePost } from "../api/api";
+import { Stack } from "expo-router";
+import { useRouter } from "expo-router";
 
 export default function MyPostsScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const router = useRouter();
   const { posts: initialPosts, setPosts: setParentPosts } = route.params;
-
   const [posts, setPosts] = useState(initialPosts || []);
 
   const toggleLike = async (postId, liked) => {
@@ -112,7 +113,23 @@ export default function MyPostsScreen() {
     </View>
   );
 
-  return (
+return (
+  <>
+    <Stack.Screen options={{ headerShown: false }} />
+
+
+    <View style={styles.header}>
+      
+      <TouchableOpacity onPress={() => router.back()}>
+        <Image
+          source={require("../../assets/images/back.png")}
+          style={styles.backIcon}
+        />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle}>내 게시물</Text>
+      <View style={{ width: 28 }} /> 
+    </View>
+
     <View style={styles.container}>
       {posts.length === 0 ? (
         <Text style={styles.empty}>작성한 글이 없습니다.</Text>
@@ -120,7 +137,9 @@ export default function MyPostsScreen() {
         <FlatList data={posts} renderItem={renderItem} keyExtractor={(item) => item.id.toString()} />
       )}
     </View>
-  );
+  </>
+);
+
 }
 
 const styles = StyleSheet.create({
@@ -136,4 +155,26 @@ const styles = StyleSheet.create({
   likeCount: { color: "#fff", marginLeft: 4 },
   empty: { color: "#888", textAlign: "center", marginTop: 20 },
   etcIcon: { width: 24, height: 24, tintColor: "#fff" },
+  backButton: { position: "absolute", top: 55, left: 20, zIndex: 10 },
+  backIcon: { width: 28, height: 28, tintColor: "#fff" },
+  header: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingHorizontal: 20,
+  paddingTop: 55,
+  paddingBottom: 15,
+  backgroundColor: "#111111",
+},
+headerTitle: {
+  color: "#fff",
+  fontSize: 18,
+  fontWeight: "bold",
+},
+backIcon: {
+  width: 28,
+  height: 28,
+  tintColor: "#fff",
+},
+
 });
