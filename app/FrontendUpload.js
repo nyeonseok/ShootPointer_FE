@@ -23,6 +23,8 @@ const FrontendUpload = ({ jerseyNumber, frontImage }) => {
   // const [presignedURL, setPresignedURL] = useState<String>("");
   const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
 
+
+
   // 파일 청크단위로 읽는 비동기 제너레이터
   async function* readFileInChunks(filePath) {
     const fileStat = await RNFS.stat(filePath);
@@ -89,7 +91,38 @@ const FrontendUpload = ({ jerseyNumber, frontImage }) => {
     }
   };
 
-  const uploadVideoToPython = async (url, video) => {};
+  const uploadVideoToPython = async (presignedUrl, video) => {
+    if (!video || !presignedUrl) return;
+
+    let chunkIndex = 0;
+
+    for await (const chunk of readFileInChunks(video.uri)) {
+      const buffer = Buffer.from(chunk, 'base64');
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: video.uri,
+        type: video.type,
+        name: video.name,
+      });
+      formData.append('presigned', JSON.stringify(presignedUrl));
+      formData.append('chunkIndex', chunkIndex.toString());
+
+      try {
+        await axios.post('파이썬 주소 알고 넣기 ㄱㄱ', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        console.log(`Chunk ${chunkIndex} offset 업로드 완료 ㅎㅎ`);
+      } catch (err) {
+        console.error(`Chunk ${chunkIndex} offset 업로드 실패 ㅜ`, err);
+        break;
+      }
+
+      chunkIndex++;
+    }
+  };
 
   //비디오 업로드 함수
   const handleVideoUpload = async () => {
@@ -111,7 +144,10 @@ const FrontendUpload = ({ jerseyNumber, frontImage }) => {
       }
 
       // 파이썬 서버로 업로드, 전송 데이터는 얘기 맞춰봐야할듯
-      await uploadVideoToPython(presignedUrl, videoData);
+      const response = await uploadVideoToPython(presignedUrl, videoData);
+      if(response.status === 200){
+        console.log("비디오 업로드 완료");
+      }
     } catch (error) {
       console.error("비디오 업로드 실패:", error);
       Alert.alert("업로드 실패", "비디오 업로드 중 오류발생ㅜ");
@@ -210,7 +246,7 @@ const FrontendUpload = ({ jerseyNumber, frontImage }) => {
               },
             ]}
             disabled={videoSetting}
-            onPress={getPresignedUrlFromServer}
+            onPress={handleVideoUpload}
           >
             <Text
               style={{
