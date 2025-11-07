@@ -14,12 +14,29 @@ const FrontendUpload = ({ jerseyNumber, frontImage }) => {
   const [videoFile, setVideoFile] = useState(null);
   const [videoName, setVideoName] = useState("");
   const [videoSize, setVideoSize] = useState(0);
+  
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState(null);
+  // const [uploadResult, setUploadResult] = useState(null);
   const [videoOk, setVideoOk] = useState(false);
   const [videoUpload, setVideoUpload] = useState(false);
   const [videoSetting, setVideoSetting] = useState(true);
   // const [presignedURL, setPresignedURL] = useState<String>("");
+  const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+
+  // 파일 청크단위로 읽는 비동기 제너레이터
+  async function* readFileInChunks(filePath) {
+    const fileStat = await RNFS.stat(filePath);
+    let offset = 0;
+
+    while (offset < fileStat.size) {
+      const length = Math.min(CHUNK_SIZE, fileStat.size - offset);
+      const chunk = await RNFS.read(filePath, length, offset, 'base64');
+      yield chunk;
+      offset += length;
+    }
+  }
+
+
 
   const pickVideo = async () => {
     const permissionResult =
@@ -208,12 +225,12 @@ const FrontendUpload = ({ jerseyNumber, frontImage }) => {
         </View>
       )}
 
-      {uploadResult && (
+      {/* {uploadResult && (
         <View style={{ marginTop: 20 }}>
           <Text>서버 응답:</Text>
           <Text>{uploadResult}</Text>
         </View>
-      )}
+      )} */}
     </View>
   );
 };
