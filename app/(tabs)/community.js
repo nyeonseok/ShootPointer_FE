@@ -62,7 +62,6 @@ export default function CommunityScreen() {
           type: post.highlightUrl?.endsWith(".mp4") ? "video" : "image",
           media: post.highlightUrl,
           likedByMe: false,
-          bookmarked: false,
           hashTag: post.hashTag || "",
         }));
 
@@ -111,17 +110,7 @@ export default function CommunityScreen() {
     }
   };
 
-  // -------------------------
-  // 북마크
-  const toggleBookmark = (postId) => {
-    setPosts((prev) =>
-      prev.map((post) =>
-        post.postId === postId ? { ...post, bookmarked: !post.bookmarked } : post
-      )
-    );
-  };
 
-  // -------------------------
   // 검색 제안
   const handleSearchChange = async (text) => {
     setSearchText(text);
@@ -173,7 +162,6 @@ export default function CommunityScreen() {
             type: post.highlightUrl?.endsWith(".mp4") ? "video" : "image",
             media: post.highlightUrl,
             likedByMe: false,
-            bookmarked: false,
             hashTag: post.hashTag || "",
           }))
         );
@@ -258,20 +246,6 @@ export default function CommunityScreen() {
               />
             </TouchableOpacity>
           </View>
-
-          <TouchableOpacity
-            onPress={() => toggleBookmark(item.postId)}
-            style={styles.iconButton}
-          >
-            <Image
-              source={
-                item.bookmarked
-                  ? require("../../assets/images/Filledbookmark.png")
-                  : require("../../assets/images/Bookmark.png")
-              }
-              style={styles.icon}
-            />
-          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
